@@ -1,5 +1,6 @@
-package dex_backend
+package dex_backend.trading.order
 
+import dex_backend.generators
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 

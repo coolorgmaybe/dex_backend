@@ -2,19 +2,28 @@ package dex_backend.trading.order
 
 import scala.collection.immutable.TreeSet
 
-final case class OrderBook(sellOrders: TreeSet[Order], buyOrders: TreeSet[Order]) {
-  implicit val aggregatedOrd: Ordering[AggregatedOrders] = Ordering[Long].on(_.price)
+final case class OrderBook(assetId: String,
+                           exchangeAssetId: String,
+                           sellOrders: TreeSet[Order],
+                           buyOrders: TreeSet[Order]) {
+  import OrderBook._
   lazy val aggregatedSellOrders: TreeSet[AggregatedOrders] = {
-    val aggregatedOrders: List[AggregatedOrders] = sellOrders.groupBy(x => (x.assetId, x.price))
-      .map { case ((assetId, price), orders) => AggregatedOrders(assetId, price, OrderDirection.Sell, orders) }
+    val aggregatedOrders: List[AggregatedOrders] = sellOrders
+      .groupBy(_.price)
+      .map { case (price, orders) =>
+        AggregatedOrders(assetId, exchangeAssetId, price, OrderDirection.Sell, orders)
+      }
       .toList
-    TreeSet(aggregatedOrders:_*)
+    TreeSet(aggregatedOrders:_*)(sellAggOrd)
   }
   lazy val aggregatedBuyOrders: TreeSet[AggregatedOrders] = {
-    val aggregatedOrders: List[AggregatedOrders] = buyOrders.groupBy(x => (x.assetId, x.price))
-      .map { case ((assetId, price), orders) => AggregatedOrders(assetId, price, OrderDirection.Buy, orders) }
+    val aggregatedOrders: List[AggregatedOrders] = buyOrders
+      .groupBy(_.price)
+      .map { case (price, orders) =>
+        AggregatedOrders(assetId, exchangeAssetId, price, OrderDirection.Buy, orders)
+      }
       .toList
-    TreeSet(aggregatedOrders:_*)
+    TreeSet(aggregatedOrders:_*)(sellAggOrd)
   }
   def add(order: Order): OrderBook = order.direction match {
     case OrderDirection.Buy => this.copy(buyOrders = buyOrders + order)
@@ -28,7 +37,12 @@ final case class OrderBook(sellOrders: TreeSet[Order], buyOrders: TreeSet[Order]
 
 object OrderBook {
 
-  implicit val ord: Ordering[Order] = Ordering[(Long, Long)].on(x => (x.price, x.timestamp))
+  val sellOrd: Ordering[Order] = Ordering[(Long, Long)].on(x => (x.price, x.timestamp))
+  val buyOrd: Ordering[Order] = Ordering[(Long, Long)].on(x => (-x.price, x.timestamp))
 
-  def empty: OrderBook = OrderBook(TreeSet.empty[Order], TreeSet.empty[Order])
+  val sellAggOrd: Ordering[AggregatedOrders] = Ordering[Long].on(_.price)
+  val buyAggOrd: Ordering[AggregatedOrders] = Ordering[Long].on(x => -x.price)
+
+  def empty(assetId: String, exchangeAssetId: String): OrderBook =
+    OrderBook(assetId, exchangeAssetId, TreeSet.empty[Order](sellOrd), TreeSet.empty[Order](buyOrd))
 }
