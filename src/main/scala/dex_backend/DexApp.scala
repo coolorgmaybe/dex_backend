@@ -1,5 +1,11 @@
 package dex_backend
 
-class DexApp extends App {
+import akka.actor.ActorSystem
+import dex_backend.networkLayer.NetworkServer
 
+object DexApp extends App {
+
+  val actorSystem = ActorSystem("systemAkka")
+
+  val networkServiceActor = actorSystem.actorOf(NetworkServer.props)
 }

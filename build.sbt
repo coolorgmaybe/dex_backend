@@ -1,3 +1,4 @@
+
 name := "dex_backend"
 
 version := "0.1"
@@ -16,4 +17,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser" % circeVersion,
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.+" % "test",
+  "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+)
+
+PB.targets in Compile := Seq(
+  scalapb.gen() -> (sourceManaged in Compile).value / "protobuf"
 )
