@@ -38,7 +38,7 @@ class MatchingEngine {
         val (acquiredOrders, peOrderOpt, _) = (if (head.direction.isBuy) sellLevel else buyLevel)
           .foldLeft(List.empty[Order], None: Option[Order], 0L) {
             case ((acc, partiallyExecutedOrderOpt, accAmount), order) if accAmount < head.volume =>
-              val volumeLeftToFill = accAmount - head.volume
+              val volumeLeftToFill = head.volume - accAmount
               if (order.volume <= volumeLeftToFill) {
                 (acc :+ order, partiallyExecutedOrderOpt, accAmount + order.volume)
               } else {
