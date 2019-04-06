@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message GeneralizedNetworkMessage {
+
+    message OrderRequestProtoMessage {
+
+        string assetId  = 1;
+        string clientId = 2;
+        uint64 price    = 3;
+        uint64 volume   = 4;
+        oneof orderStatus {
+            uint64 sell   = 5;
+            uint64 buy    = 6;
+        }
+    }
+
+    message MatchedOrderProtoMessage {
+
+        string matchedOrderId   = 1;
+        uint64 price            = 2;
+        uint64 volume           = 3;
+        string matchedAddressId = 4;
+    }
+
+    oneof innerMessage {
+        OrderRequestProtoMessage orderRequest = 1;
+        MatchedOrderProtoMessage matchedOrder = 2;
+    }
+}
