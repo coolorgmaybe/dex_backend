@@ -20,7 +20,9 @@ class MatchingEngineSpec extends FlatSpec with Matchers with GeneratorDrivenProp
   )
 
   it should "match orders" in {
-    Try(engine.matchCycle(orderBook)) shouldBe 'success
+    forAll(DexGenerators.orderBookGen) { orderBook =>
+      Try(engine.matchCycle(orderBook)) shouldBe 'success
+    }
   }
 
 }
