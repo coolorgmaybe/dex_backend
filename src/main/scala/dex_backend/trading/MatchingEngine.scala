@@ -1,6 +1,6 @@
 package dex_backend.trading
 
-import dex_backend.trading.order.{Order, OrderBook}
+import dex_backend.trading.order.{AggregatedOrders, Order, OrderBook}
 
 class MatchingEngine {
 

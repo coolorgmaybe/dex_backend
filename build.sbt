@@ -7,6 +7,8 @@ scalaVersion := "2.12.8"
 val circeVersion = "0.8.0"
 
 libraryDependencies ++= Seq(
+  "com.google.guava" % "guava" % "21.0",
+  "org.scorexfoundation" %% "scrypto" % "2.+",
   "com.typesafe.akka" %% "akka-actor" % "2.5.+",
   "com.typesafe.akka" %% "akka-stream" % "2.5.+",
   "io.circe" %% "circe-core" % circeVersion,
