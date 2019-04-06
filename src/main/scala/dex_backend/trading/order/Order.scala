@@ -1,6 +1,5 @@
-package dex_backend.order
+package dex_backend.trading.order
 
-// todo: serialization
 final case class Order(assetId: String,
                        clientId: String,
                        direction: OrderDirection,

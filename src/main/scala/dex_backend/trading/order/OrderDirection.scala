@@ -1,4 +1,4 @@
-package dex_backend.order
+package dex_backend.trading.order
 
 sealed trait OrderDirection {
   val isSell: Boolean

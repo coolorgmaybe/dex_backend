@@ -1,9 +1,9 @@
-package dex_backend.order
+package dex_backend.trading.order
 
 import scala.collection.immutable.TreeSet
 
 final case class OrderBook(sellOrders: TreeSet[Order], buyOrders: TreeSet[Order]) {
-  implicit val aggregatedOrdersOrd: Ordering[AggregatedOrders] = Ordering[Long].on(_.price)
+  implicit val aggregatedOrd: Ordering[AggregatedOrders] = Ordering[Long].on(_.price)
   lazy val aggregatedSellOrders: TreeSet[AggregatedOrders] = {
     val aggregatedOrders: List[AggregatedOrders] = sellOrders.groupBy(x => (x.assetId, x.price))
       .map { case ((assetId, price), orders) => AggregatedOrders(assetId, price, OrderDirection.Sell, orders) }

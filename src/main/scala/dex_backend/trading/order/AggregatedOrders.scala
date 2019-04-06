@@ -1,4 +1,4 @@
-package dex_backend.order
+package dex_backend.trading.order
 
 import scala.collection.immutable.TreeSet
 

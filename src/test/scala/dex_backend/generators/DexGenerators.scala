@@ -1,6 +1,6 @@
 package dex_backend.generators
 
-import dex_backend.order.{Order, OrderBook, OrderDirection, OrderStatus}
+import dex_backend.trading.order.{Order, OrderBook, OrderDirection, OrderStatus}
 import org.scalacheck.Gen
 
 import scala.collection.immutable.TreeSet
