@@ -12,7 +12,7 @@ class BestExecutionMatchingEngine extends MatchingEngine {
     val (acquiredOrders, peOrderOpt) = acquireOrders(matchCandidate, ordersToMatch)
     val updatedOrderBook = if (acquiredOrders.nonEmpty) {
       val bookWithoutExecuted = acquiredOrders
-        .foldLeft(orderBook) { case (book, order) => book.remove(order) }
+        .foldLeft(orderBook)(_ remove _)
         .remove(matchCandidate)
       peOrderOpt.map(bookWithoutExecuted.add).getOrElse(bookWithoutExecuted)
     } else {
