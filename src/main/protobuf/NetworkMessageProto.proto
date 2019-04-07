@@ -4,26 +4,37 @@ message GeneralizedNetworkMessage {
 
     message OrderRequestProtoMessage {
 
-        string assetId  = 1;
+        string assetId = 1;
+        string exchangeAssetId = 7;
         string clientId = 2;
-        uint64 price    = 3;
-        uint64 volume   = 4;
+        uint64 price = 3;
+        uint64 volume = 4;
         oneof orderStatus {
-            uint64 sell   = 5;
-            uint64 buy    = 6;
+            uint64 sell = 5;
+            uint64 buy = 6;
         }
     }
 
     message MatchedOrderProtoMessage {
 
-        string matchedOrderId   = 1;
-        uint64 price            = 2;
-        uint64 volume           = 3;
+        string matchedOrderId = 1;
+        uint64 price = 2;
+        uint64 volume = 3;
         string matchedAddressId = 4;
+    }
+
+    message TradeDirectiveProtoMessage {
+        string targetOrderOwnerClientId = 1;
+        string counterPartyClientId = 2;
+        string assetId = 3;
+        uint64 volume = 4;
+        uint64 price = 5;
+        uint32 order = 6;
     }
 
     oneof innerMessage {
         OrderRequestProtoMessage orderRequest = 1;
         MatchedOrderProtoMessage matchedOrder = 2;
+        TradeDirectiveProtoMessage tradeDirective = 3;
     }
 }

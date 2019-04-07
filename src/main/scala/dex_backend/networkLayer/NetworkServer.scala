@@ -1,13 +1,14 @@
 package dex_backend.networkLayer
 
 import java.net.{InetAddress, InetSocketAddress}
-
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.{IO, Tcp}
 import akka.io.Tcp._
-import dex_backend.networkLayer.NetworkMessages.{MatchedOrderNetworkMessage, NetworkMessageProto, OrderRequestNetworkMessage}
+import dex_backend.networkLayer.NetworkMessages.{MatchedOrderNetworkMessage, NetworkMessageProto, OrderRequestNetworkMessage, TradeDirectiveNetworkMessage}
 import dex_backend.networkLayer.NetworkServer.{MessageFromPeer, TestedPing}
-
+import dex_backend.trading.{BestExecutionMatchingEngine, TradeDirective}
+import dex_backend.trading.order.{Order, OrderBook, OrderDirection, OrderStatus}
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 
@@ -16,13 +17,15 @@ class NetworkServer extends Actor {
   implicit val system: ActorSystem = context.system
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
-  val selfAddress: InetSocketAddress = new InetSocketAddress("0.0.0.0", 9101)
+  val selfAddress: InetSocketAddress = new InetSocketAddress("0.0.0.0", 9111)
 
   var connectedPeer: Map[InetSocketAddress, (ActorRef, String)] = Map.empty[InetSocketAddress, (ActorRef, String)]
 
-  IO(Tcp) ! Bind(self, selfAddress)
+  var orderBook: OrderBook = OrderBook.empty("wood", "stone")
 
-  //system.scheduler.schedule(20.seconds, 20.seconds, self, TestedPing)
+  val matchingEngine: BestExecutionMatchingEngine = new BestExecutionMatchingEngine
+
+  IO(Tcp) ! Bind(self, selfAddress)
 
   override def receive: Receive = {
     case Bound(localAddress) =>
@@ -37,7 +40,7 @@ class NetworkServer extends Actor {
       println(s"Got new connection from $remote. Creating handler: $handler.")
       sender ! Register(handler)
       sender ! ResumeReading
-      connectedPeer = connectedPeer.updated(remote, (handler, ""))
+      //connectedPeer = connectedPeer.updated(remote, (handler, ""))
 
     case CommandFailed(c: Connect) =>
       connectedPeer -= c.remoteAddress
@@ -45,17 +48,53 @@ class NetworkServer extends Actor {
 
     case MessageFromPeer(remote, message) =>
       message match {
-        case msg@OrderRequestNetworkMessage(assetId, clientId, direction, price, volume) =>
-          println(s"${msg.toString} from $remote")
+        case msg@OrderRequestNetworkMessage(assetId, exchangeAssetId, clientId, direction, price, volume) =>
+          println(s"Got ${msg.toString} from $remote with clientId: $clientId.")
           connectedPeer = connectedPeer.find(peer => peer._1 == remote && peer._2._2.isEmpty) match {
             case Some(_) => connectedPeer.updated(remote, (sender, clientId))
-            case _       => connectedPeer
+            case _ => connectedPeer
           }
-          println(s"Updated peer collection ${connectedPeer.mkString(",")}.")
-          sender ! MatchedOrderNetworkMessage("TESTED", 999, 666, "TESTED")
+          val order: Order = Order(
+            assetId,
+            exchangeAssetId,
+            clientId,
+            direction,
+            price,
+            volume,
+            System.currentTimeMillis(),
+            OrderStatus.Available)
+
+          orderBook = orderBook.add(order)
+
+          connectedPeer = connectedPeer.updated(remote, (sender, clientId))
+
+          val directives: (List[TradeDirective], OrderBook) = matchingEngine.doMatch(orderBook)
+          orderBook = directives._2
+          if (directives._1.nonEmpty) {
+            println(s"Got new matched directive!")
+            directives._1.foreach { d =>
+              println(s"Matched directive is: assetId -> ${d.assetId}, counterPartyClientId -> ${d.counterPartyClientId}," +
+                s" price -> ${d.price}, targetOrderOwnerClientId -> ${d.targetOrderOwnerClientId}, " +
+                s"volume -> ${d.volume}.")
+            }
+            directives._1.foreach { k =>
+              val clients = connectedPeer.filter(x => x._2._2 == k.targetOrderOwnerClientId || x._2._2 == k.counterPartyClientId)
+              clients.foreach { m =>
+                m._2._1 ! TradeDirectiveNetworkMessage(
+                  k.targetOrderOwnerClientId,
+                  k.counterPartyClientId,
+                  k.assetId,
+                  k.volume,
+                  k.price,
+                  k.targetOrderId,
+                )
+              }
+            }
+
+          }
+
         case msg@MatchedOrderNetworkMessage(orderId, price, volume, matchedAddressId) =>
           println(s"${msg.toString} from $remote")
-          sender ! MatchedOrderNetworkMessage("TESTED999", 10000000, 99999999, "TESTED666")
       }
 
     case TestedPing =>

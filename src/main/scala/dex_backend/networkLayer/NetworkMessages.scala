@@ -1,8 +1,8 @@
 package dex_backend.networkLayer
 
 import NetworkMessageProto.GeneralizedNetworkMessage
-import NetworkMessageProto.GeneralizedNetworkMessage.{InnerMessage, MatchedOrderProtoMessage, OrderRequestProtoMessage}
-import NetworkMessageProto.GeneralizedNetworkMessage.InnerMessage.{MatchedOrder => MO, OrderRequest => OR}
+import NetworkMessageProto.GeneralizedNetworkMessage.{InnerMessage, MatchedOrderProtoMessage, OrderRequestProtoMessage, TradeDirectiveProtoMessage}
+import NetworkMessageProto.GeneralizedNetworkMessage.InnerMessage.{MatchedOrder => MO, OrderRequest => OR, TradeDirective => TD}
 import akka.util.ByteString
 import dex_backend.trading.order.OrderDirection
 import dex_backend.trading.order.OrderDirection.{Buy, Sell}
@@ -28,6 +28,7 @@ object NetworkMessages {
   }
 
   case class OrderRequestNetworkMessage(assetId: String,
+                                        exchangeAssetId: String,
                                         clientId: String,
                                         direction: OrderDirection,
                                         price: Long,
@@ -56,6 +57,7 @@ object NetworkMessages {
         .withClientId(order.clientId)
         .withPrice(order.price)
         .withVolume(order.volume)
+        .withExchangeAssetId(order.exchangeAssetId)
       OR(order.direction match {
         case Sell => initialOrder.withSell(1)
         case Buy => initialOrder.withBuy(2)
@@ -70,6 +72,7 @@ object NetworkMessages {
         }
         Some(OrderRequestNetworkMessage(
           order.assetId,
+          order.exchangeAssetId,
           order.clientId,
           status,
           order.price,
@@ -118,6 +121,52 @@ object NetworkMessages {
     }
   }
 
+  case class TradeDirectiveNetworkMessage(targetOrderOwnerClientId: String,
+                                          counterPartyClientId: String,
+                                          assetId: String,
+                                          price: Long,
+                                          volume: Long,
+                                          order: Int) extends NetworkMessageProto {
+
+    override val messageName: String = "Transfer Directive"
+    override val messageId: Byte = MatchedOrderNetworkMessage.messageId
+
+    override def toInnerMessage: InnerMessage = TradeDirectiveSerializer.toProto(this)
+
+    override def toString: String = s"$messageName - orderId: price: $price, volume: $volume,"
+  }
+
+  object TradeDirectiveNetworkMessage {
+
+    val messageId: Byte = 2: Byte
+  }
+
+  object TradeDirectiveSerializer extends NetworkMessageProtoSerializer[TradeDirectiveNetworkMessage] {
+
+    override def toProto(message: TradeDirectiveNetworkMessage): InnerMessage =
+      TD(TradeDirectiveProtoMessage()
+        .withPrice(message.price)
+        .withVolume(message.volume)
+        .withTargetOrderOwnerClientId(message.targetOrderOwnerClientId)
+        .withCounterPartyClientId(message.counterPartyClientId)
+        .withAssetId(message.assetId)
+          .withOrder(message.order)
+      )
+
+    override def fromProto(message: InnerMessage): Option[TradeDirectiveNetworkMessage] = message.tradeDirective match {
+      case Some(matchedOM) =>
+        Some(TradeDirectiveNetworkMessage(
+          matchedOM.targetOrderOwnerClientId,
+          matchedOM.counterPartyClientId,
+          matchedOM.assetId,
+          matchedOM.price,
+          matchedOM.volume,
+          matchedOM.order)
+        )
+      case _ => Option.empty[TradeDirectiveNetworkMessage]
+    }
+  }
+
   case object GeneralizedNetworkMessageProto {
 
     def toProto(message: NetworkMessageProto): GeneralizedNetworkMessage =
@@ -128,6 +177,7 @@ object NetworkMessages {
       networkMessage.innerMessage match {
         case InnerMessage.OrderRequest(_) => OrderRequestSerializer.fromProto(networkMessage.innerMessage).get
         case InnerMessage.MatchedOrder(_) => MatchedOrderSerializer.fromProto(networkMessage.innerMessage).get
+        case InnerMessage.TradeDirective(_) => TradeDirectiveSerializer.fromProto(networkMessage.innerMessage).get
       }
     }
   }
