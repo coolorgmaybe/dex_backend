@@ -7,7 +7,7 @@ import scala.collection.immutable.TreeSet
 
 class StrictMatchingEngine extends MatchingEngine {
 
-  override def doMatch(orderBook: OrderBook): List[TradeDirective] = {
+  override def doMatch(orderBook: OrderBook): (List[TradeDirective], OrderBook) = {
     @tailrec
     def loop(buyLevels: List[AggregatedOrders],
              sellLevels: List[AggregatedOrders],
@@ -26,7 +26,7 @@ class StrictMatchingEngine extends MatchingEngine {
         case _ =>
           outputDirectives
       }
-    loop(orderBook.aggregatedBuyOrders.toList, orderBook.aggregatedSellOrders.toList, List.empty)
+    loop(orderBook.aggregatedBuyOrders.toList, orderBook.aggregatedSellOrders.toList, List.empty) -> orderBook
   }
 
   @tailrec

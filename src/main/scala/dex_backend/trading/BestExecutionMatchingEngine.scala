@@ -6,11 +6,19 @@ import scala.collection.immutable.TreeSet
 
 class BestExecutionMatchingEngine extends MatchingEngine {
 
-  override def doMatch(orderBook: OrderBook): List[TradeDirective] = {
+  override def doMatch(orderBook: OrderBook): (List[TradeDirective], OrderBook) = {
     val matchCandidate = (orderBook.sellOrders.headOption ++ orderBook.buyOrders.headOption).minBy(_.timestamp)
     val ordersToMatch = if (matchCandidate.direction.isBuy) orderBook.sellOrders else orderBook.buyOrders
     val (acquiredOrders, peOrderOpt) = acquireOrders(matchCandidate, ordersToMatch)
-    MatchResult(matchCandidate, acquiredOrders, peOrderOpt).toSellerMostDirectives
+    val updatedOrderBook = if (acquiredOrders.nonEmpty) {
+      val bookWithoutExecuted = acquiredOrders
+        .foldLeft(orderBook) { case (book, order) => book.remove(order) }
+        .remove(matchCandidate)
+      peOrderOpt.map(bookWithoutExecuted.add).getOrElse(bookWithoutExecuted)
+    } else {
+      orderBook
+    }
+    MatchResult(matchCandidate, acquiredOrders, peOrderOpt).toSellerMostDirectives -> updatedOrderBook
   }
 
   private def acquireOrders(targetOrder: Order, orders: TreeSet[Order]): (List[Order], Option[Order]) = {
