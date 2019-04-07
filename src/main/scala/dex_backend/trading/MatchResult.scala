@@ -9,11 +9,13 @@ final case class MatchResult(orderToMeet: Order,
   def toSellerMostDirectives: List[TradeDirective] = orderToMeet.direction match {
     case OrderDirection.Sell => correspondingOrders.map { order =>
       val priceToExecute = math.max(orderToMeet.price, order.price)
-      TradeDirective(orderToMeet.clientId, order.clientId, orderToMeet.assetId, orderToMeet.volume, priceToExecute)
+      TradeDirective(orderToMeet.clientId, order.clientId, orderToMeet.assetId,
+        orderToMeet.volume, priceToExecute, orderToMeet)
     }
     case OrderDirection.Buy => correspondingOrders.map { order =>
       val priceToExecute = math.min(orderToMeet.price, order.price)
-      TradeDirective(order.clientId, orderToMeet.clientId, order.assetId, order.volume, priceToExecute)
+      TradeDirective(order.clientId, orderToMeet.clientId, order.assetId,
+        order.volume, priceToExecute, orderToMeet)
     }
   }
 
