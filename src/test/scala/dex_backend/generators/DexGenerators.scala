@@ -20,8 +20,8 @@ object DexGenerators {
   val orderBookGen: Gen[OrderBook] = for {
     assetId <- Gen.oneOf(Seq("ETT", "EFYT", "BTC"))
     exchangeAssetId <- Gen.oneOf(Seq("ERC", "CRD", "COK"))
-    buyingOrders <- Gen.listOf(orderGen(OrderDirection.Buy, assetId, exchangeAssetId))
-    sellingOrders <- Gen.listOf(orderGen(OrderDirection.Sell, assetId, exchangeAssetId))
-  } yield OrderBook(assetId, exchangeAssetId, TreeSet(buyingOrders:_*)(sellOrd), TreeSet(sellingOrders:_*)(buyOrd))
+    buyingOrders <- Gen.nonEmptyListOf(orderGen(OrderDirection.Buy, assetId, exchangeAssetId))
+    sellingOrders <- Gen.nonEmptyListOf(orderGen(OrderDirection.Sell, assetId, exchangeAssetId))
+  } yield OrderBook(assetId, exchangeAssetId, TreeSet(sellingOrders:_*)(sellOrd), TreeSet(buyingOrders:_*)(buyOrd))
 
 }

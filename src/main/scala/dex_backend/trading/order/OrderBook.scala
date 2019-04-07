@@ -7,6 +7,7 @@ final case class OrderBook(assetId: String,
                            sellOrders: TreeSet[Order],
                            buyOrders: TreeSet[Order]) {
   import OrderBook._
+  val isEmpty: Boolean = sellOrders.isEmpty && buyOrders.isEmpty
   lazy val aggregatedSellOrders: TreeSet[AggregatedOrders] = {
     val aggregatedOrders: List[AggregatedOrders] = sellOrders
       .groupBy(_.price)

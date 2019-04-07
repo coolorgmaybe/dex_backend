@@ -31,6 +31,10 @@ final case class Order(assetId: String,
   def executePartially(executedVolume: Long): Order =
     this.copy(volume = volume - executedVolume, partiallyExecuted = true)
 
+  def split(atVolume: Long): (Order, Order) =
+    this.copy(volume = volume - atVolume, partiallyExecuted = true) ->
+      this.copy(volume = atVolume, partiallyExecuted = true)
+
   override def hashCode(): Int = id
 
   override def equals(obj: Any): Boolean = obj match {
